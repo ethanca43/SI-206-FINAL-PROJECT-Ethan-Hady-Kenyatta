@@ -4,11 +4,12 @@ import json
 import os
 import curl
 
+
 load_dotenv()
 client_id = os.getenv("CLIENT_ID")
 client_secret = os.getenv("SECRET_CLIENT")
 def receive_access_token():
-    print(client_id, client_secret)
+    #print(client_id, client_secret)
 
     url = 'https://api.spotify.com/v1/tracks/2TpxZ7JUBn3uw46aR7qd6V'
     data = {
@@ -21,8 +22,7 @@ def receive_access_token():
     #print(result['access_token'])
     return result['access_token']
     
-token = receive_access_token()
-print(token)
+#print(token)
 
 def oauth_header(token):
   headers = {'Authorization': f'Bearer {token}'}
@@ -35,17 +35,58 @@ def get_artist(token):
    header = oauth_header(token)
    response = requests.get(url, headers=header)
 
-   print(response.json())
+   #print(response.json())
 
 
-get_artist(token)
+def get_new_releases(token):
+   url = 'https://api.spotify.com/v1/browse/new-releases'
+   header = oauth_header(token)
+   response = requests.get(url, headers=header).json()
+   #print(response.json())
+   #print(response)
 
-# headers = {
-#     'Authorization': 'Bearer NgCXRK...MzYjw',
-# }
+   
+
+   n_d = []
+    
+   for release_d in response['albums']['items']:
+      #print(release_d)
+      #web_link = release_d['items']['artists'][0]['external_urls']['spotify']
+      track_artists = {}
+      for artist in release_d['artists']:
+         name = artist['name']
+         artist_id = artist['id']
+         if name not in track_artists:
+            track_artists[name] = artist_id
+
+      #artist_name = release_d['artists'][0]['name']
+      album_link = release_d['external_urls']['spotify']
+      album_title = release_d['name']
+      album_release_date = release_d['release_date']
+      album_track_count = release_d['total_tracks']
+      album_type = release_d['type']
+
+  
+      # print(album_link)
+      # print(album_title)
+      # print(album_release_date)
+      # print(album_track_count)
+      # print(album_type)
+      # print('\n\n')
+
+      n_d.append((album_title, track_artists, album_track_count, album_type, album_release_date, album_link, True))
+   print(n_d)
+   return n_d
+
+#def 
 
 
+#https://api.spotify.com/browse/new-releases'
+def main():
+  token = receive_access_token()
+  headers = oauth_header(token)
+  get_artist(token)
+  get_new_releases(token)
 
-
-#curl "https://api.spotify.com/v1/artists/4Z8W4fKeB5YxbusRsdQVPb" \
-     #-H "Authorization: Bearer  BQCdFGmtesiEdzZ3_l1mUxq_xyTFMiueAT010BUAjriMy_mtsUn47Zk0OEhfGoTwe200LDlhbAIRjN5PTWp05S606eWzfcayW_tXsGqGxlZxgPobOKc"
+if __name__ == "__main__":
+    main()
