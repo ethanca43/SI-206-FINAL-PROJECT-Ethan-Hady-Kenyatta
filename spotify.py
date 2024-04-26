@@ -43,6 +43,7 @@ def track_id_search(token, track_name,artist_name):
     else:
       genre = 'No listed Genre'
 
+
     track_popularity = response['tracks']['items'][0]['popularity']
 
     explicit = response['tracks']['items'][0]['explicit']
@@ -87,13 +88,13 @@ def create_genre_table(song_info_lst, database):
    path = os.path.dirname(os.path.abspath(__file__))
    conn = sqlite3.connect(path + "/" + database)
    cur = conn.cursor()
-   cur.execute('CREATE TABLE IF NOT EXISTS genres (id INTEGER UNIQUE, genre_name TEXT UNIQUE)')
+   cur.execute('CREATE TABLE IF NOT EXISTS spotify_genres (id INTEGER UNIQUE, genre_name TEXT UNIQUE)')
 
    accum = 1
    accum_lst = []
    for i in song_info_lst:
       if i[2] not in accum_lst:
-         cur.execute('INSERT OR IGNORE into genres (id, genre_name) VALUES(?, ?)', (accum, i[2]))
+         cur.execute('INSERT OR IGNORE into spotify_genres (id, genre_name) VALUES(?, ?)', (accum, i[2]))
          accum += 1
          accum_lst.append(i[2])
    conn.commit()
@@ -126,7 +127,7 @@ def add_info_to_database(id_num, song_info, database):
     cur.execute(f'SELECT id FROM albums WHERE album_name = "{song_info[-1]}"')
     album_id = cur.fetchone()[0]
 
-    cur.execute(f'SELECT id FROM genres WHERE genre_name = "{song_info[2]}"')
+    cur.execute(f'SELECT id FROM spotify_genres WHERE genre_name = "{song_info[2]}"')
     genre_id = cur.fetchone()[0]
 
     #print(f'Adding {song_info[0]} into db')
@@ -250,22 +251,54 @@ def main():
    create_artists_table(songs_list,'API_Audio_FusionDB.db')
    create_explicit_tables('API_Audio_FusionDB.db')
 
-   accum = 1
+   #accum = 1
+   
    full_song_lst = []
+   #gathering data from Spotify API to compile into full_song_lst
    for song in songs_list:
    #    #tuple of song info, has song name, artist, genre(s), song popularity, explicit
       song_info = track_id_search(token, song[0], song[1])
       full_song_lst.append(song_info)
-   #create the albums table
+   #create the albums and genre table
    create_albums_table(full_song_lst, 'API_Audio_FusionDB.db')
    create_genre_table(full_song_lst, 'API_Audio_FusionDB.db')
 
-   for song_info in full_song_lst:
-      add_info_to_database(accum, song_info,'API_Audio_FusionDB.db')
-      accum += 1
+   #database loads
+   print('Loading the first 25 rows of data into db!')
+   print('\n\n')
+   accum_1 = 1
+   data_load_1 = full_song_lst[:25]
+   for song_info in data_load_1:
+      add_info_to_database(accum_1, song_info,'API_Audio_FusionDB.db')
+      accum_1 += 1
+      
+   print('Loading the second batch of 25 data rows into db!')
+   accum_2 = 26
+   data_load_2 = full_song_lst[25:50]
+   for song_info in data_load_2:
+      add_info_to_database(accum_2, song_info,'API_Audio_FusionDB.db')
+      accum_2 += 1    
+      
+
+   print('Loading the third batch of 25 data rows into db!')
+   accum_3 = 51
+   data_load_3 = full_song_lst[50:75]
+   for song_info in data_load_3:
+      add_info_to_database(accum_3, song_info,'API_Audio_FusionDB.db')
+      accum_3 += 1   
+      
+   print('Loading the fourth batch of 25 data rows into db!')
+   accum_4 = 76
+   data_load_4 = full_song_lst[75: ]
+   for song_info in data_load_4:
+      add_info_to_database(accum_4, song_info,'API_Audio_FusionDB.db')
+      accum_4 += 1   
+
+
+   # for song_info in full_song_lst:
+   #    add_info_to_database(accum, song_info,'API_Audio_FusionDB.db')
+   #    accum += 1
  
-
-
   
 
 if __name__ == "__main__":
