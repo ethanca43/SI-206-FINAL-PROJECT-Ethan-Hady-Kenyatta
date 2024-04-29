@@ -203,7 +203,7 @@ def main():
    create_lastfm_viz_artist(data_lastfm)
 
    data_spotify = calculate_artist_by_popularity_spotify(database)
-   #\create_spotify_viz_artist(data_spotify)
+   create_spotify_viz_artist(data_spotify)
 
 if __name__ == "__main__":
     main()
