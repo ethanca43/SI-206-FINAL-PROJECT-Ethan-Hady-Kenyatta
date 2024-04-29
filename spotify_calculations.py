@@ -4,6 +4,7 @@ import json
 import os
 import sqlite3
 import regex
+import matplotlib.pyplot as plt
 
 #take in database, and loop thru it to determine the counts for the number of explicit songs
 
@@ -30,43 +31,156 @@ def calculate_explicitnesss(database):
    return explicit_count, non_explicit_count
 
 #return a dictionary for genre and their counts
-def calculate_genre_frequency(database):
+
+def calculate_genres_by_popularity_spotify(database):
    path = os.path.dirname(os.path.abspath(__file__))
    conn = sqlite3.connect(path + "/" + database)
    cur = conn.cursor()
 
    out = {}
-   cur.execute('SELECT spotify_genres.genre_name FROM spotify_songs JOIN spotify_genres ON spotify_songs.genre_id = spotify_genres.id')
+   cur.execute('SELECT spotify_genres.genre_name, spotify_songs.song_popularity FROM spotify_songs JOIN spotify_genres ON spotify_songs.genre_id = spotify_genres.id')
    data = cur.fetchall()
    #print(data)
-   general_genres = ['N/A', 'pop', 'funk', 'r&b', 'hip hop', 'rock', 'indie', 'alt', 'other' ]
+   #general_genres = ['N/A', 'pop', 'funk', 'r&b', 'hip hop', 'rock', 'indie', 'alt', 'other' ]
    for row in data:
+      #print(row[0])
       if row[0] not in out:
-         out[row[0]] = 1
-      else:
-        out[row[0]] += 1
+         in_list = []
+         for row_2 in data:
+            if row[0] == row_2[0]:
+               in_list.append(row_2[1])
+         out[row[0]] = in_list
+   #print(out)
+   return out
+
+
+
+def calculate_genre_by_popularity_lastfm(database):
+   path = os.path.dirname(os.path.abspath(__file__))
+   conn = sqlite3.connect(path + "/" + database)
+   cur = conn.cursor()
+
+   out = {}
+   cur.execute('SELECT lastfm_genre_tags.genre_tag, lastfm_songs.play_counts FROM lastfm_songs JOIN lastfm_genre_tags ON lastfm_songs.genretag_id = lastfm_genre_tags.id')
+   data = cur.fetchall()
+   #print(data)
+   #general_genres = ['N/A', 'pop', 'funk', 'r&b', 'hip hop', 'rock', 'indie', 'alt', 'other' ]
+   for row in data:
+      #print(row[0])
+      if row[0] not in out:
+         in_list = []
+         for row_2 in data:
+            if row[0] == row_2[0] and row_2[1] != None:
+               in_list.append(row_2[1])
+         out[row[0]] = in_list
    print(out)
    return out
 
-#take dictionary from above function and sorts into general genres
-def sort_out_genres(dictionary):
+
+def calculate_artist_by_popularity_lastfm(database):
+   path = os.path.dirname(os.path.abspath(__file__))
+   conn = sqlite3.connect(path + "/" + database)
+   cur = conn.cursor()
+
+   out = {}
+   cur.execute('SELECT spot_artists.artist_name, lastfm_songs.play_counts FROM lastfm_songs JOIN spot_artists ON lastfm_songs.artist_id = spot_artists.id')
+   data = cur.fetchall()
+   #print(data)
+   for row in data:
+      #print(row[0])
+      if row[0] not in out:
+         in_list = []
+         for row_2 in data:
+            if row[0] == row_2[0] and row_2[1] != None:
+               in_list.append(row_2[1])
+         if len(in_list) > 1:
+            out[row[0]] = in_list
+   print(out)
+   return out
+
+
+def calculate_artist_by_popularity_spotify(database):
+   path = os.path.dirname(os.path.abspath(__file__))
+   conn = sqlite3.connect(path + "/" + database)
+   cur = conn.cursor()
+
+   out = {}
+   cur.execute('SELECT spot_artists.artist_name, spotify_songs.song_popularity FROM spotify_songs JOIN spot_artists ON spotify_songs.artist_id = spot_artists.id')
+   data = cur.fetchall()
+   #print(data)
+   for row in data:
+      #print(row[0])
+      if row[0] not in out:
+         in_list = []
+         for row_2 in data:
+            if row[0] == row_2[0] and row_2[1] != None:
+               in_list.append(row_2[1])
+         if len(in_list) > 1:
+            out[row[0]] = in_list
+   return out
+
+
+
+
+
+
+
+
+#sort_out_keys = sorted(out.keys(), key=lambda i: out[i])
+
+
+def create_lastfm_viz_genre(dictionary):
+    
+    #Extracting genre tags and play counts
+    genre_tags = sorted(dictionary.keys(), key = lambda i: len(dictionary.keys()[i]))
+    play_counts = list(dictionary.values())
+    # Create the box plot
+
+    plt.figure(figsize=(12,8))
+    plt.subplots_adjust(bottom=0.15)
+    plt.boxplot(play_counts, labels=genre_tags, vert=False)
+    plt.xlabel('Play Counts')
+    plt.ylabel('Genre Tags')
+    plt.title('Box and Whisker Plot of Music Genre Tags vs. Play Counts')
+    plt.tight_layout()
+    plt.show()
+
+
+def create_lastfm_viz_artist(dictionary):
+    
+    #Extracting genre tags and play counts
+    artists = sorted(dictionary.keys(), key = lambda i: dictionary[i])
+    play_counts = sorted(dictionary.values(), key =lambda i: i)
+    # Create the box plot
+
+    plt.figure(figsize=(12,8))
+    plt.subplots_adjust(bottom=0.15)
+    plt.boxplot(play_counts, labels=artists, vert=False)
+    plt.xlabel('Play Counts')
+    plt.ylabel('Last FM Artists')
+    plt.title('Box and Whisker Plot of Last FM Artists vs Play Counts (by tens of millions)')
+    plt.tight_layout()
+    plt.show()
+
+
+def create_spotify_viz_artist(dictionary):
+    
+    #Extracting genre tags and play counts
+    artists = sorted(dictionary.keys(), key = lambda i: dictionary[i])
+    play_counts = sorted(dictionary.values(), key =lambda i: i)
+    # Create the box plot
+
+    plt.figure(figsize=(12,8))
+    plt.subplots_adjust(bottom=0.15)
+    plt.boxplot(play_counts, labels=artists, vert=False)
+    plt.xlabel('Popularity Counts')
+    plt.ylabel('Spotify Artists')
+    plt.title('Box and Whisker Plot of Spotify Artists vs Popularity Counts')
+    plt.tight_layout()
+    plt.show()
    
-   new_d = {'N/A': 39, 'pop':12, 'funk': 3, 'r&b':10, 'hip hop': 4, 'indie': 4, 'rock':2,'alt': 3,'afrofuturism': 2, 'other': 21}
-   nl = ['N/A', 'pop', 'funk', 'r&b', 'hip hop', 'indie', 'rock', 'alt', 'afrofuturism', 'other']
-  
-   out = {'N/A': [a, b ,c]}
 
 
-   for genre in nl:
-      count = 0
-      for k, v in dictionary.items():
-         if genre in k:
-            count += 1
-
-
-      
-      
-      
       
 
 
@@ -80,7 +194,16 @@ def sort_out_genres(dictionary):
 def main():
    database = 'API_Audio_FusionDB.db'
    #calculate_explicitnesss(database)
-   calculate_genre_frequency(database)
+   #calculate_genres_by_popularity_spotify(database)
+   # freq_d = calculate_genre_by_popularity_lastfm(database)
+   # create_lastfm_viz_genre(freq_d)
+
+   data_lastfm = calculate_artist_by_popularity_lastfm(database)
+   data_lastfm
+   create_lastfm_viz_artist(data_lastfm)
+
+   data_spotify = calculate_artist_by_popularity_spotify(database)
+   #\create_spotify_viz_artist(data_spotify)
 
 if __name__ == "__main__":
     main()

@@ -68,20 +68,14 @@ def get_track_info(API_KEY,song_name, artist_name):
   try:
      listener_count = result['track']['listeners']
   except:
-     listener_count = None
+     listener_count = 0
   #print(listener_count)
 
   try:
      playcount = result['track']['playcount']
   except:
-     playcount = None
+     playcount = 0
   #print(playcount)
-
-  try:
-     album = result['track']['album']['title']
-  except:
-     album = 'No album information'
-  #print(album)
 
   try:
      genre = result['track']['toptags']['tag'][0]['name']
