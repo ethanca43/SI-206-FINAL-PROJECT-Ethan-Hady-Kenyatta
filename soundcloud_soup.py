@@ -8,7 +8,8 @@ import re
 # ul 
 # li
 
-
+#change the name of the files, 
+#
 
 def scrap(filename):
     source_dir = os.path.dirname(__file__)
@@ -25,5 +26,14 @@ def scrap(filename):
 
 
 scrap('soundcloud_html/Greedy_ArianaGrande.html')
+scrap('soundcloud_html/Adele_Hello.html')
+scrap('soundcloud_html/Afterglow_TheDriverEra.html')
+
+return #integer 290,212
 
 scrap('soundcloud_html/Adele_rollinginthedeep.html')
+
+stream Don't Stop beleiven free on soundcloud.html 
+
+DontStopBelive_Journey.html
+
