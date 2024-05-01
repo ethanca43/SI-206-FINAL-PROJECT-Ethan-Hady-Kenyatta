@@ -242,14 +242,14 @@ def main():
   accum_1 = 1
   data_load_1 = full_song_lst[:25]
   for song_info in data_load_1:
-    add_info_to_database(accum_1, song_info,'API_Audio_FusionDB.db')
+    add_info_to_database(accum_1, song_info,database)
     accum_1 += 1
       
   print('Loading the second batch of 25 data rows into db!')
   accum_2 = 26
   data_load_2 = full_song_lst[25:50]
   for song_info in data_load_2:
-    add_info_to_database(accum_2, song_info,'API_Audio_FusionDB.db')
+    add_info_to_database(accum_2, song_info,database)
     accum_2 += 1    
       
 
@@ -257,14 +257,14 @@ def main():
   accum_3 = 51
   data_load_3 = full_song_lst[50:75]
   for song_info in data_load_3:
-    add_info_to_database(accum_3, song_info,'API_Audio_FusionDB.db')
+    add_info_to_database(accum_3, song_info,database)
     accum_3 += 1   
       
   print('Loading the fourth batch of 25 data rows into db!')
   accum_4 = 76
   data_load_4 = full_song_lst[75: ]
   for song_info in data_load_4:
-    add_info_to_database(accum_4, song_info,'API_Audio_FusionDB.db')
+    add_info_to_database(accum_4, song_info,database)
     accum_4 += 1   
 
 
