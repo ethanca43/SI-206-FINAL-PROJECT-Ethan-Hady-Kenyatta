@@ -3,7 +3,12 @@ import requests
 import json
 import os
 import sqlite3
-import curl
+
+
+
+
+
+"""Get_lastfm_API_Key takes in the filename of a file representing the .txt file which contians our granted API Key for Last FM. It returns the stirng contents of the file."""
 
 
 def get_lastfm_API_KEY(filename):
@@ -11,44 +16,14 @@ def get_lastfm_API_KEY(filename):
   full_path = os.path.join(base_path, filename)
   with open(full_path, 'r') as f:
      API_KEY = f.read()
-     #print(API_KEY)
   return API_KEY
 
 
-# headers = {
-#     'user-agent': 'ethanca43'
-# }
 
-#r = requests.get('https://my-api-url', headers=headers)
-def request_top_artists(API_KEY):
-  headers = {
-      'user-agent': 'ethanca43'
-  }
-  payload = {
-      'api_key': API_KEY,
-      'method': 'chart.gettopartists',
-      'format': 'json'
-  }
-  r = requests.get('https://ws.audioscrobbler.com/2.0/', headers=headers, params=payload)
- #print(r.status_code)
-  result = json.loads(r.content)
-  print(result)
-  return result
-
-def request_top_tags(API_KEY):
-  headers = {
-      'user-agent': 'ethanca43'
-  }
-  payload = {
-      'api_key': API_KEY,
-      'method': 'tag.getTopTags',
-      'format': 'json'
-  }
-  r = requests.get(f'https://ws.audioscrobbler.com/2.0/?method=tag.getTopTags&api_key={API_KEY}&format=json', headers=headers, params=payload)
- #print(r.status_code)
-  result = json.loads(r.content)
-  print(result)
-
+"""Get_track_info takes in the API_key, the requested song_name, aned requested artist_name, 
+and returns a tuple containing the requested song, artist, the genre (the first genre tag listed in the json repsonse), playcount (how many times 
+the song/track has been played) and listener_count (how many users listen to the track on Last FM). The request similarly uses a series of required 
+headers and params, in the form of a payload dictionary"""
 
 
 def get_track_info(API_KEY,song_name, artist_name):
@@ -61,29 +36,31 @@ def get_track_info(API_KEY,song_name, artist_name):
       'format': 'json'
       }
   r = requests.get(f'https://ws.audioscrobbler.com/2.0/?method=track.getInfo&api_key={API_KEY}&artist={artist_name}&track={song_name}&format=json', headers=headers, params=payload)
-  #print(r.status_code)
   result = json.loads(r.content)
-  #print(song_name)
-  #print(result)
+  
   try:
      listener_count = result['track']['listeners']
   except:
      listener_count = 0
-  #print(listener_count)
 
   try:
      playcount = result['track']['playcount']
   except:
      playcount = 0
-  #print(playcount)
 
   try:
      genre = result['track']['toptags']['tag'][0]['name']
   except:
      genre = 'No available genre tag'
-  #print(genre)
+
 
   return song_name, artist_name, genre, playcount, listener_count
+
+
+"""Create_genre_table_lastfm takes in as an argument song_info_lst, a compiled list of tuples which contain all relevant data pulled from get_track_info 
+and the database, and creates the lastfm_genre_tags table which houses the unique genre tags pulled by the API data search and extraction in get_track_info. 
+Uses an accumulator to create unique id's for each unique genre"""
+
 
 def create_genre_table_lastfm(song_info_lst, database):
    path = os.path.dirname(os.path.abspath(__file__))
@@ -102,6 +79,13 @@ def create_genre_table_lastfm(song_info_lst, database):
    conn.close()
 
 
+
+
+"""Add_info_to_database takes in an id_number, a tuple of song information, and the creates 'lastfm_songs' table in the database which represents the main table 
+for data collected on last fm songs, The data is constructed in away so that there is no duplicate string data. The columns in this table are the generated song id, 
+song name, artist name (represented by id's from spot_artists table, genre_id (represented by id's from spot_genres table) add a row of tuple song data to the database, using id's to not have duplicate string data"""
+
+
 def add_info_to_database(id_num, song_info, database):
     #connecting to DB
     path = os.path.dirname(os.path.abspath(__file__))
@@ -111,8 +95,6 @@ def add_info_to_database(id_num, song_info, database):
     cur.execute(f'SELECT id FROM spot_artists WHERE artist_name = "{song_info[1]}"')
     artist_id = cur.fetchone()[0]
 
-    # cur.execute(f'SELECT id FROM albums WHERE album_name = "{song_info[-1]}"')
-    # album_id = cur.fetchone()[0]
 
     cur.execute(f'SELECT id FROM lastfm_genre_tags WHERE genre_tag = "{song_info[2]}"')
     genre_id = cur.fetchone()[0]
@@ -240,21 +222,18 @@ def main():
       ("Yummy", "Justin Bieber")
       
       ]
-  database = 'API_Audio_FusionDB.db'
+  database = input("Enter the name of the database here: ")
+  #'API_Audio_FusionDB.db'
   API_KEY = get_lastfm_API_KEY('LastFMAPI_KEY.txt')
-  # request_top_artists(API_KEY)
-  # request_top_tags(API_KEY)
+
 
   full_song_lst = []
-  #get_track_info(API_KEY, 'Smokin Out The Window', 'Bruno Mars')
   for song in songs_list:
-   #    #tuple of song info, has song name, artist, genre(s), song popularity, explicit
+   #tuple of song info, has song name, artist, genre(s), song popularity, explicit
       song_info = get_track_info(API_KEY, song[0], song[1])
       full_song_lst.append(song_info)
-  #print(full_song_lst)
-
+ 
   create_genre_table_lastfm(full_song_lst, database)
-  #add_info_to_database(id_num, song_info, database)
 
 
     #database loads

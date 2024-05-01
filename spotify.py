@@ -4,12 +4,8 @@ import json
 import os
 import sqlite3
 
-
-load_dotenv()
-client_id = os.getenv("CLIENT_ID")
-client_secret = os.getenv("SECRET_CLIENT")
-def receive_access_token():
-    url = 'https://api.spotify.com/v1/tracks/2TpxZ7JUBn3uw46aR7qd6V'
+"""receive_access_token sends over to Spotify servers our client id and secret id to receive back a response that contains within it our access token, aka our API Key so that we may process the spotify json data"""
+def receive_access_token(client_id, client_secret):
     data = {
         'grant_type': 'client_credentials',
         'client_id': client_id,
@@ -20,29 +16,31 @@ def receive_access_token():
     return result['access_token']
     
 
+"""oauth_header creates a header that will be required for future api calls. They are an arguement required for any requests.get call, as well a params"""
+
 def oauth_header(token):
   headers = {'Authorization': f'Bearer {token}'}
   return headers
 
 
 
-"""retrieves the first spotify info (album, track_popularity, explicit) for the requested song."""
+"""track_search takes in the token received from 'receive_access_token', any track name, and any track artist name, and then tretrieves the first listed search result on spotify returning the name requested, the artist request and their
+ (genre, track_popularity, explicit, album) for the requested song and artist. Also returns song name and artist name originally inputted."""
 
-def track_id_search(token, track_name,artist_name):
+def track_search(token, track_name,artist_name):
     url = f'https://api.spotify.com/v1/search'
     header = oauth_header(token)
     params = {
     'q': f'{track_name}%{artist_name}',
     'type': 'track,artist'}
     response = requests.get(url, params=params, headers=header).json()
-    track_id = response['tracks']['items'][0]['id']
+
     album = response['tracks']['items'][0]['album']['name']
 
     if len(response['artists']['items']) > 0 and len(response['artists']['items'][0]['genres']) > 0:
       genre = response['artists']['items'][0]['genres'][0]
     else:
       genre = 'No listed Genre'
-
 
     track_popularity = response['tracks']['items'][0]['popularity']
 
@@ -52,6 +50,9 @@ def track_id_search(token, track_name,artist_name):
     else: 
       explicit = 2
     return track_name, artist_name, genre, track_popularity, explicit, album
+
+"""Create_artists_table takes song_lst, a list of songs in which each song is represented as a tuple containing the song name and aritst name, and the database, 
+creates the table 'spot_artists' in the database and loops thru the the provided list adding unique ids with unique artists to the newly created table"""
 
 def create_artists_table(song_lst, database):
    path = os.path.dirname(os.path.abspath(__file__))
@@ -67,6 +68,11 @@ def create_artists_table(song_lst, database):
          accum_lst.append(i[1])
    conn.commit()
    conn.close()
+
+
+
+"""Create_albums_table takes in song_info_lst, a compiled list of tuples which contain all relevant data pulled from track_id_search, and the database,
+ then creates the table 'albums' which, similarly to create_artists table, loops thru the data of the songs in a list adds the unique albums and their unique id nums to the table"""
 
 def create_albums_table(song_info_lst, database):
    path = os.path.dirname(os.path.abspath(__file__))
@@ -84,6 +90,10 @@ def create_albums_table(song_info_lst, database):
    conn.commit()
    conn.close()
 
+"""Create_genre_table takes in song_info_lst, a compiled list of tuples which contain all relevant data pulled from track_id_search, and the database,
+then creates the table 'spotify_genres'. It then loops thru the provided list extracting the album information, and adding unique albums with a unique id assigned to spotify_genres table """
+
+
 def create_genre_table(song_info_lst, database):
    path = os.path.dirname(os.path.abspath(__file__))
    conn = sqlite3.connect(path + "/" + database)
@@ -100,6 +110,9 @@ def create_genre_table(song_info_lst, database):
    conn.commit()
    conn.close()
 
+"""Create_explicit_tables takes in only the database as its argument and makes a subtable 'explicit' for explicitness in spotify songs. 
+1 represents yes, the song is explicit, and 2, represents, no the song is not explict.  """
+
 
 def create_explicit_tables(database):
    path = os.path.dirname(os.path.abspath(__file__))
@@ -114,7 +127,11 @@ def create_explicit_tables(database):
 
 
 
-#add a row of tuple song data to the database, using id's to not have duplicate string data
+"""Add_info_to_database takes in an id_number, a tuple of song information, and the creates 'spotify_songs' table in the database which represents the main table 
+for data collected on spotify songs, The data is constructed in away so that there is no duplicate string data. The columns in this table are the generated song id, 
+song name, artist name (represented by id's from spot_artists table, genre_id (represented by id's from spot_genres table) add a row of tuple song data to the database, using id's to not have duplicate string data"""
+
+
 def add_info_to_database(id_num, song_info, database):
     #connecting to DB
     path = os.path.dirname(os.path.abspath(__file__))
@@ -141,6 +158,11 @@ def add_info_to_database(id_num, song_info, database):
 
 
 def main():
+
+   load_dotenv()
+   client_id = os.getenv("CLIENT_ID")  
+   client_secret = os.getenv("SECRET_CLIENT")
+
    songs_list = [
       ("Shape of You", "Ed Sheeran", "÷ (Divide)", "Pop"),
       ("Blinding Lights", "The Weeknd", "After Hours", "R&B"),
@@ -244,24 +266,24 @@ def main():
       ("Yummy", "Justin Bieber")
       
       ]
-   #print(songs_list)
-   token = receive_access_token()
-   headers = oauth_header(token)
+   #database = 'API_Audio_FusionDB.db'
+   token = receive_access_token(client_id, client_secret)
+   database = input("Enter the name of the database here: ")
 
-   create_artists_table(songs_list,'API_Audio_FusionDB.db')
-   create_explicit_tables('API_Audio_FusionDB.db')
+   create_artists_table(songs_list,database)
+   create_explicit_tables(database)
 
-   #accum = 1
    
    full_song_lst = []
    #gathering data from Spotify API to compile into full_song_lst
    for song in songs_list:
    #    #tuple of song info, has song name, artist, genre(s), song popularity, explicit
-      song_info = track_id_search(token, song[0], song[1])
+      song_info = track_search(token, song[0], song[1])
       full_song_lst.append(song_info)
+
    #create the albums and genre table
-   create_albums_table(full_song_lst, 'API_Audio_FusionDB.db')
-   create_genre_table(full_song_lst, 'API_Audio_FusionDB.db')
+   create_albums_table(full_song_lst, database)
+   create_genre_table(full_song_lst, database)
 
    #database loads
    print('Loading the first 25 rows of data into db!')
@@ -269,29 +291,34 @@ def main():
    accum_1 = 1
    data_load_1 = full_song_lst[:25]
    for song_info in data_load_1:
-      add_info_to_database(accum_1, song_info,'API_Audio_FusionDB.db')
+      add_info_to_database(accum_1, song_info,database)
       accum_1 += 1
       
+
+
    print('Loading the second batch of 25 data rows into db!')
+   print('\n\n')
    accum_2 = 26
    data_load_2 = full_song_lst[25:50]
    for song_info in data_load_2:
-      add_info_to_database(accum_2, song_info,'API_Audio_FusionDB.db')
+      add_info_to_database(accum_2, song_info,database)
       accum_2 += 1    
       
 
    print('Loading the third batch of 25 data rows into db!')
+   print('\n\n')
    accum_3 = 51
    data_load_3 = full_song_lst[50:75]
    for song_info in data_load_3:
-      add_info_to_database(accum_3, song_info,'API_Audio_FusionDB.db')
+      add_info_to_database(accum_3, song_info,database)
       accum_3 += 1   
       
    print('Loading the fourth batch of 25 data rows into db!')
+   print('\n\n')
    accum_4 = 76
    data_load_4 = full_song_lst[75: ]
    for song_info in data_load_4:
-      add_info_to_database(accum_4, song_info,'API_Audio_FusionDB.db')
+      add_info_to_database(accum_4, song_info,database)
       accum_4 += 1   
 
 
